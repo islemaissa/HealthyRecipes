@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1017927705454",
+    "project_id": "healthyrecipesplus",
+    "storage_bucket": "healthyrecipesplus.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1017927705454:android:a935a24f772c5ad033d77f",
+        "android_client_info": {
+          "package_name": "com.example.healthyrecipesplus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1D3K7rcS3rHMifoDwfm1RAO2gTJ8_7H0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

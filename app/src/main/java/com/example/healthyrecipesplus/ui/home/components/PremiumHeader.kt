@@ -11,10 +11,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.healthyrecipesplus.ui.theme.HealthyRecipesColors
+import com.google.accompanist.insets.statusBarsPadding
 
 @Composable
 fun PremiumHeader(
@@ -22,56 +24,65 @@ fun PremiumHeader(
     onFavoritesClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(HealthyRecipesColors.WarmBeige)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 8.dp)
-        ) {
-            Text(
-                text = "Bienvenue,",
-                fontSize = 13.sp,
-                color = HealthyRecipesColors.TaupeGray,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = userName,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = HealthyRecipesColors.DarkGreen
-            )
-        }
+    Column {  // Column pour ajouter un espace vertical
+        Spacer(modifier = Modifier.height(20.dp)) // espace au-dessus
 
-        Row {
-            IconButton(
-                onClick = onFavoritesClick,
-                modifier = Modifier.size(40.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(HealthyRecipesColors.WarmBeige)
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Texte sur la même ligne
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Favorite,
-                    contentDescription = "Mes favoris",
-                    tint = HealthyRecipesColors.DarkGreen,
-                    modifier = Modifier.size(24.dp)
+                Text(
+                    text = "Bienvenue,",
+                    fontSize = 20.sp,
+                    color = HealthyRecipesColors.TaupeGray,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = userName,
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = HealthyRecipesColors.DarkGreen
                 )
             }
 
-            IconButton(
-                onClick = onLogoutClick,
-                modifier = Modifier.size(40.dp)
+            // Icônes Favoris + Déconnexion
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Logout,
-                    contentDescription = "Déconnexion",
-                    tint = HealthyRecipesColors.TaupeGray,
-                    modifier = Modifier.size(24.dp)
-                )
+                IconButton(
+                    onClick = onFavoritesClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Favorite,
+                        contentDescription = "Mes favoris",
+                        tint = Color(0xFFE53935), // ❤️ rouge identique à ElegantRecipeCard
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = onLogoutClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Logout,
+                        contentDescription = "Déconnexion",
+                        tint = HealthyRecipesColors.TaupeGray,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
     }

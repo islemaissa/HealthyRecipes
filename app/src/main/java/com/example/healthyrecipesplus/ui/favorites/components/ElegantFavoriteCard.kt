@@ -107,7 +107,7 @@ fun ElegantFavoriteCard(
                 Icon(
                     imageVector = Icons.Filled.Favorite,
                     contentDescription = "Retirer des favoris",
-                    tint = Color(0xFF2D5A3D),
+                    tint = Color(0xFFE53935), // ❤️ rouge identique aux autres cartes
                     modifier = Modifier.size(24.dp)
                 )
             }

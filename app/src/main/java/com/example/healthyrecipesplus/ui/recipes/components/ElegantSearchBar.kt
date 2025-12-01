@@ -25,7 +25,7 @@ fun ElegantSearchBar(
         label = { Text("Rechercher par ingrédient", color = HealthyRecipesColors.TextTaupe) },
         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = HealthyRecipesColors.SecondaryTeal) },
         modifier = modifier
-            .height(50.dp),
+            .height(70.dp),
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = HealthyRecipesColors.SecondaryTeal,

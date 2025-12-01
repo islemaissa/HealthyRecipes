@@ -24,16 +24,21 @@ fun FavoritesScreen(
     val favorites = viewModel.favoriteRecipes.collectAsState().value
     val favoriteIds = viewModel.favoriteIds.collectAsState().value
 
-
     if (favorites.isEmpty()) {
-        EmptyFavoritesState()
+        // 🔹 Liste vide : afficher état vide avec flèche retour
+        EmptyFavoritesState(
+            onBackClick = { navController.popBackStack() }
+        )
     } else {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFF5F1E8))
         ) {
-            FavoritesHeader()
+            // 🔹 Header avec flèche retour
+            FavoritesHeader(
+                onBack = { navController.popBackStack() }
+            )
 
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),

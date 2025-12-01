@@ -87,6 +87,8 @@ dependencies {
 
     // Coil pour Jetpack Compose
     implementation("io.coil-kt:coil-compose:2.4.0")
+    // Accompanist Insets pour gérer le padding de la barre de statut
+    implementation("com.google.accompanist:accompanist-insets:0.30.1")
 
 
 }

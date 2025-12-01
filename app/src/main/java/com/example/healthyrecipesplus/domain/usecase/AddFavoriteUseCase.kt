@@ -7,3 +7,4 @@ class AddFavoriteUseCase(private val repository: FavoritesRepository) {
         repository.addFavorite(userId, recipeId)
     }
 }
+

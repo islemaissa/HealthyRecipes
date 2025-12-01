@@ -10,7 +10,9 @@ activityCompose = "1.11.0"
 composeBom = "2024.09.00"
 firebaseAuthKtx = "24.0.1"
 androidx-compose-runtime = "1.7.0"
-firebaseFirestoreKtx = "26.0.2"  # Ajout : Version pour androidx.compose.runtime
+firebaseFirestoreKtx = "26.0.2"
+runtime = "1.9.5"
+foundation = "1.9.5"  # Ajout : Version pour androidx.compose.runtime
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -30,6 +32,8 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "androidx-compose-runtime" }  # Ajout : Bibliothèque pour runtime
 firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx", version.ref = "firebaseAuthKtx" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx", version.ref = "firebaseFirestoreKtx" }
+androidx-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 
 
 [plugins]

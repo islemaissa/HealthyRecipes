@@ -1,21 +1,20 @@
 package com.example.healthyrecipesplus.ui.favorites
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import com.example.healthyrecipesplus.domain.model.Recipe
-import com.example.healthyrecipesplus.ui.favorites.stateholder.FavoritesViewModel
 import androidx.navigation.NavController
+import com.example.healthyrecipesplus.ui.favorites.stateholder.FavoritesViewModel
+import com.example.healthyrecipesplus.ui.favorites.components.ElegantFavoriteCard
+import com.example.healthyrecipesplus.ui.favorites.components.EmptyFavoritesState
+import com.example.healthyrecipesplus.ui.favorites.components.FavoritesHeader
 
 @Composable
 fun FavoritesScreen(
@@ -25,68 +24,31 @@ fun FavoritesScreen(
     val favorites = viewModel.favoriteRecipes.collectAsState().value
     val favoriteIds = viewModel.favoriteIds.collectAsState().value
 
+
     if (favorites.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Vous n'avez aucune recette favorite pour le moment")
-        }
+        EmptyFavoritesState()
     } else {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .background(Color(0xFFF5F1E8))
         ) {
-            items(favorites) { recipe ->
-                FavoriteRecipeCard(
-                    recipe = recipe,
-                    isFavorite = favoriteIds.contains(recipe.id),
-                    onFavoriteClick = { viewModel.toggleFavorite(recipe.id) },
-                    onClick = { navController.navigate("recipeDetail/${recipe.id}") }
-                )
-            }
-        }
-    }
-}
+            FavoritesHeader()
 
-@Composable
-fun FavoriteRecipeCard(
-    recipe: Recipe,
-    isFavorite: Boolean,
-    onFavoriteClick: () -> Unit,
-    onClick: () -> Unit
-) {
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        shadowElevation = 4.dp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(8.dp)
-                .fillMaxWidth()
-        ) {
-            AsyncImage(
-                model = recipe.imageUrl,
-                contentDescription = recipe.name,
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
-                    .size(80.dp)
-                    .padding(end = 8.dp)
-            )
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(recipe.name, style = MaterialTheme.typography.titleMedium)
-                Text("${recipe.calories} cal", style = MaterialTheme.typography.bodySmall)
-                Text("Préparation: ${recipe.prepTime}", style = MaterialTheme.typography.bodySmall)
-            }
-
-            IconButton(onClick = onFavoriteClick) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = if (isFavorite) "Retirer des favoris" else "Ajouter aux favoris",
-                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                )
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                items(favorites) { recipe ->
+                    ElegantFavoriteCard(
+                        recipe = recipe,
+                        isFavorite = favoriteIds.contains(recipe.id),
+                        onFavoriteClick = { viewModel.toggleFavorite(recipe.id) },
+                        onClick = { navController.navigate("recipeDetail/${recipe.id}") }
+                    )
+                }
             }
         }
     }

@@ -7,3 +7,4 @@ class RemoveFavoriteUseCase(private val repository: FavoritesRepository) {
         repository.removeFavorite(userId, recipeId)
     }
 }
+

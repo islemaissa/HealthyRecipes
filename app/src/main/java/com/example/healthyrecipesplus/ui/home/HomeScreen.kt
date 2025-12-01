@@ -1,15 +1,12 @@
 package com.example.healthyrecipesplus.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,173 +14,181 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import com.example.healthyrecipesplus.domain.model.Recipe
-import com.example.healthyrecipesplus.ui.home.stateholder.HomeViewModel
+import androidx.compose.ui.unit.sp
+import com.example.healthyrecipesplus.ui.favorites.stateholder.FavoritesViewModel
+import com.example.healthyrecipesplus.ui.home.components.PremiumHeader
+import com.example.healthyrecipesplus.ui.home.components.SectionTitle
+import com.example.healthyrecipesplus.ui.home.components.PremiumRecipeCard
 import androidx.navigation.NavController
+import com.example.healthyrecipesplus.ui.home.stateholder.HomeViewModel
+import com.example.healthyrecipesplus.ui.theme.HealthyRecipesColors
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    navController: NavController
+    favoritesViewModel: FavoritesViewModel,
+    navController: NavController,
+    onLogout: () -> Unit
 ) {
     val userName by viewModel.userName.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val recipes by viewModel.recipes.collectAsState()
-    val favoriteRecipes by viewModel.favoriteRecipes.collectAsState()
+    val favoriteIds by favoritesViewModel.favoriteIds.collectAsState()
     val categories = viewModel.categories
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(recipes) {
-        isLoading = false
-    }
+    LaunchedEffect(recipes) { isLoading = false }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .background(HealthyRecipesColors.WarmBeige)
     ) {
-        // --- Header avec flèche de retour et icône favoris ---
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
         ) {
-            IconButton(onClick = {
-                navController.navigate("login") { popUpTo("home") { inclusive = true } }
-            }) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Retour"
+            item {
+                PremiumHeader(
+                    userName = userName,
+                    onFavoritesClick = { navController.navigate("favorites") },
+                    onLogoutClick = { onLogout() }
                 )
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            Text(
-                text = "Bonjour, $userName 👋",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
-            )
-
-            IconButton(onClick = { navController.navigate("favorites") }) {
-                Icon(
-                    imageVector = Icons.Filled.Favorite,
-                    contentDescription = "Mes favoris"
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- Catégories ---
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(categories) { category ->
-                Surface(
-                    shape = CircleShape,
-                    color = if (category == selectedCategory) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.secondary,
+            item {
+                Column(
                     modifier = Modifier
-                        .size(80.dp)
-                        .clickable { viewModel.selectCategory(category) },
-                    shadowElevation = 4.dp
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = category,
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(8.dp)
+                    SectionTitle(
+                        title = "Catégories",
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(categories) { category ->
+                            Box(
+                                modifier = Modifier
+                                    .height(48.dp)
+                                    .background(
+                                        color = if (category == selectedCategory) {
+                                            HealthyRecipesColors.DarkGreen
+                                        } else {
+                                            HealthyRecipesColors.LightBeige
+                                        },
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable { viewModel.selectCategory(category) }
+                                    .padding(horizontal = 16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = category,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (category == selectedCategory) {
+                                        HealthyRecipesColors.PureWhite
+                                    } else {
+                                        HealthyRecipesColors.TaupeGray
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    SectionTitle(title = "Recettes recommandées")
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            if (isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = HealthyRecipesColors.DarkGreen
                         )
                     }
                 }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- Loader ou message vide ---
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else if (recipes.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Aucune recette dans cette catégorie", style = MaterialTheme.typography.bodyMedium)
-            }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
+            } else if (recipes.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Aucune recette dans cette catégorie",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = HealthyRecipesColors.TaupeGray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
                 items(recipes) { recipe ->
-                    RecipeCard(
-                        recipe = recipe,
-                        favoriteRecipes = favoriteRecipes,
-                        onFavoriteClick = { viewModel.toggleFavorite(recipe.id) },
-                        onClick = { navController.navigate("recipeDetail/${recipe.id}") }
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        PremiumRecipeCard(
+                            recipe = recipe,
+                            isFavorite = favoriteIds.contains(recipe.id),
+                            onFavoriteClick = { favoritesViewModel.toggleFavorite(recipe.id) },
+                            onClick = { navController.navigate("recipeDetail/${recipe.id}") }
+                        )
+                    }
                 }
 
                 item {
-                    Button(
-                        onClick = { navController.navigate("recipesList/Toutes") },
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp)
+                            .padding(16.dp)
                     ) {
-                        Text("Voir toutes les recettes")
+                        Button(
+                            onClick = { navController.navigate("recipesList/Toutes") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = HealthyRecipesColors.DarkGreen
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                "Voir toutes les recettes",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = HealthyRecipesColors.PureWhite
+                            )
+                        }
                     }
                 }
             }
-        }
-    }
-}
 
-@Composable
-fun RecipeCard(
-    recipe: Recipe,
-    favoriteRecipes: Set<String>,
-    onFavoriteClick: () -> Unit,
-    onClick: () -> Unit
-) {
-    val isFavorite = favoriteRecipes.contains(recipe.id)
-
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        shadowElevation = 4.dp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(8.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = recipe.imageUrl,
-                contentDescription = recipe.name,
-                modifier = Modifier.size(80.dp)
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(recipe.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("${recipe.calories} cal", style = MaterialTheme.typography.bodySmall)
-                Text("Préparation: ${recipe.prepTime}", style = MaterialTheme.typography.bodySmall)
-            }
-
-            IconButton(onClick = onFavoriteClick) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = if (isFavorite) "Retirer des favoris" else "Ajouter aux favoris",
-                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                )
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

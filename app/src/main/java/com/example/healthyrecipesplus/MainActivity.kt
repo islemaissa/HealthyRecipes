@@ -1,26 +1,29 @@
 package com.example.healthyrecipesplus
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.healthyrecipesplus.data.datasource.local.LocalFavoritesDataSource
 import com.example.healthyrecipesplus.data.datasource.remote.FirebaseAuthDataSource
 import com.example.healthyrecipesplus.data.datasource.remote.FirebaseRecipesDataSource
+import com.example.healthyrecipesplus.data.datasource.remote.FirestoreFavoritesDataSource
 import com.example.healthyrecipesplus.data.repository.AuthRepository
-import com.example.healthyrecipesplus.data.repository.FavoritesRepository
 import com.example.healthyrecipesplus.data.repository.RecipesRepository
+import com.example.healthyrecipesplus.data.repository.FavoritesRepository
 import com.example.healthyrecipesplus.domain.usecase.*
 import com.example.healthyrecipesplus.ui.auth.LoginScreen
 import com.example.healthyrecipesplus.ui.auth.RegisterScreen
@@ -30,8 +33,10 @@ import com.example.healthyrecipesplus.ui.favorites.FavoritesScreen
 import com.example.healthyrecipesplus.ui.favorites.stateholder.FavoritesViewModel
 import com.example.healthyrecipesplus.ui.home.HomeScreen
 import com.example.healthyrecipesplus.ui.home.stateholder.HomeViewModel
+import com.example.healthyrecipesplus.ui.home.stateholder.HomeViewModelFactory
 import com.example.healthyrecipesplus.ui.recipes.RecipesListScreen
 import com.example.healthyrecipesplus.ui.recipes.stateholder.RecipesListViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,38 +56,61 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     val navController = rememberNavController()
 
+    // --- Etat utilisateur Firebase observé ---
+    val currentUser = remember { mutableStateOf(FirebaseAuth.getInstance().currentUser) }
+
+    // Ecoute des changements Firebase
+    LaunchedEffect(Unit) {
+        FirebaseAuth.getInstance().addAuthStateListener { auth ->
+            currentUser.value = auth.currentUser
+        }
+    }
+
     // --- Repositories & UseCases ---
     val recipesRepository = RecipesRepository(FirebaseRecipesDataSource())
     val getRecipesByCategoryUseCase = GetRecipesByCategoryUseCase(recipesRepository)
     val getRecipeDetailsUseCase = GetRecipeDetailsUseCase(recipesRepository)
     val authRepository = AuthRepository(FirebaseAuthDataSource())
-    val localFavoritesDataSource = LocalFavoritesDataSource()
-    val favoritesRepository = FavoritesRepository(localFavoritesDataSource)
+
+    val favoritesRepository = FavoritesRepository(FirestoreFavoritesDataSource())
     val getFavoritesUseCase = GetFavoritesUseCase(favoritesRepository)
     val addFavoriteUseCase = AddFavoriteUseCase(favoritesRepository)
     val removeFavoriteUseCase = RemoveFavoriteUseCase(favoritesRepository)
 
-    NavHost(navController = navController, startDestination = "welcome") {
-
-        // --- Welcome ---
-        composable("welcome") {
-            com.example.healthyrecipesplus.ui.welcome.WelcomeScreen(
-                onStartClick = { navController.navigate("login") }
-            )
+    // --- ViewModel partagé pour favoris ---
+    val favoritesViewModel: FavoritesViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return FavoritesViewModel(
+                    currentUser.value?.uid ?: "",
+                    getFavoritesUseCase,
+                    addFavoriteUseCase,
+                    removeFavoriteUseCase,
+                    recipesRepository
+                ) as T
+            }
         }
+    )
 
-        // --- Login ---
+    // --- NavHost ---
+    NavHost(
+        navController = navController,
+        startDestination = if (currentUser.value != null) "home" else "login"
+    ) {
         composable("login") {
             LoginScreen(
                 onLoginSuccess = {
-                    navController.navigate("home") { popUpTo("login") { inclusive = true } }
+                    currentUser.value = FirebaseAuth.getInstance().currentUser
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                        launchSingleTop = true
+                    }
                 },
                 onNavigateToRegister = { navController.navigate("register") },
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        // --- Register ---
         composable("register") {
             RegisterScreen(
                 onRegisterSuccess = { navController.popBackStack() },
@@ -90,85 +118,77 @@ fun AppNavigation() {
             )
         }
 
-        // --- Home ---
         composable("home") {
             val homeViewModel: HomeViewModel = viewModel(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                        return HomeViewModel(getRecipesByCategoryUseCase, authRepository, favoritesRepository) as T
+                factory = HomeViewModelFactory(getRecipesByCategoryUseCase, authRepository, favoritesRepository)
+            )
+
+            HomeScreen(
+                viewModel = homeViewModel,
+                favoritesViewModel = favoritesViewModel,
+                navController = navController,
+                onLogout = {
+                    FirebaseAuth.getInstance().signOut()
+                    currentUser.value = null
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true } // <-- ne vide que "home"
+                        launchSingleTop = true
                     }
                 }
             )
-            HomeScreen(viewModel = homeViewModel, navController = navController)
         }
 
-        // --- Recipes List ---
         composable(
-            route = "recipesList/{category}",
+            "recipesList/{category}",
             arguments = listOf(navArgument("category") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val category = backStackEntry.arguments?.getString("category") ?: "Végétarien"
+        ) { entry ->
+            val category = entry.arguments?.getString("category") ?: "Végétarien"
+
             val recipesViewModel: RecipesListViewModel = viewModel(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return RecipesListViewModel(getRecipesByCategoryUseCase, recipesRepository) as T
                     }
                 }
             )
+
             recipesViewModel.loadRecipes(category)
-            RecipesListScreen(viewModel = recipesViewModel, navController = navController, category = category)
+
+            RecipesListScreen(
+                viewModel = recipesViewModel,
+                favoritesViewModel = favoritesViewModel,
+                navController = navController,
+                category = category
+            )
         }
 
-        // --- Recipe Detail ---
         composable(
-            route = "recipeDetail/{recipeId}",
+            "recipeDetail/{recipeId}",
             arguments = listOf(navArgument("recipeId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val recipeId = backStackEntry.arguments?.getString("recipeId")
+        ) { entry ->
+            val recipeId = entry.arguments?.getString("recipeId") ?: return@composable
 
-            if (recipeId.isNullOrBlank()) {
-                android.util.Log.e("🔥NavGraph", "❌ recipeId est NULL ou VIDE !")
-                return@composable
-            }
-
-
-            // ViewModel pour les détails
             val recipeDetailViewModel: RecipeDetailViewModel = viewModel(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return RecipeDetailViewModel(getRecipeDetailsUseCase) as T
-                    }
-                }
-            )
-
-            val favoritesViewModel: FavoritesViewModel = viewModel(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                        val userId = "currentUserId"
-                        return FavoritesViewModel(userId, getFavoritesUseCase, addFavoriteUseCase, removeFavoriteUseCase, recipesRepository) as T
                     }
                 }
             )
 
             RecipeDetailScreen(
                 recipeId = recipeId,
-                navController = navController, // <-- ajouté
+                navController = navController,
                 recipeDetailViewModel = recipeDetailViewModel,
                 favoritesViewModel = favoritesViewModel
             )
         }
 
-        // --- Favorites ---
         composable("favorites") {
-            val favoritesViewModel: FavoritesViewModel = viewModel(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                        val userId = "currentUserId"
-                        return FavoritesViewModel(userId, getFavoritesUseCase, addFavoriteUseCase, removeFavoriteUseCase, recipesRepository) as T
-                    }
-                }
+            FavoritesScreen(
+                viewModel = favoritesViewModel,
+                navController = navController
             )
-            FavoritesScreen(viewModel = favoritesViewModel, navController = navController)
         }
     }
 }

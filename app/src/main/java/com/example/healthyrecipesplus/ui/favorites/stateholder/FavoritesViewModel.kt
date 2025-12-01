@@ -23,13 +23,13 @@ class FavoritesViewModel(
     val favoriteIds: StateFlow<Set<String>> = getFavoritesUseCase(userId)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
-    // --- Flow des recettes complètes favorites ---
+    // --- Flow des recettes favorites complètes ---
     val favoriteRecipes: StateFlow<List<Recipe>> = combine(
         favoriteIds,
-        recipesRepository.getAllRecipesFlow() // <- assure-toi que cette fonction existe et renvoie Flow<List<RecipeDto>>
-    ) { ids: Set<String>, recipesDtos: List<com.example.healthyrecipesplus.data.datasource.remote.dto.RecipeDto> ->
-        recipesDtos.map { it.toDomain() }       // Conversion RecipeDto -> Recipe
-            .filter { recipe -> ids.contains(recipe.id) } // Filtrer par favoris
+        recipesRepository.getAllRecipesFlow() // Flow<List<RecipeDto>>
+    ) { ids, recipeDtos ->
+        recipeDtos.map { it.toDomain() }
+            .filter { ids.contains(it.id) }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // --- Ajouter / retirer un favori ---

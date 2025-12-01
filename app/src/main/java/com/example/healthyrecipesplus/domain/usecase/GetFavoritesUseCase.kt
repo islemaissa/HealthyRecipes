@@ -8,3 +8,4 @@ class GetFavoritesUseCase(private val repository: FavoritesRepository) {
         return repository.getFavoritesFlow(userId)
     }
 }
+

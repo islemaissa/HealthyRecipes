@@ -1,31 +1,28 @@
 package com.example.healthyrecipesplus.data.repository
 
-import com.example.healthyrecipesplus.data.datasource.local.LocalFavoritesDataSource
+import com.example.healthyrecipesplus.data.datasource.remote.FirestoreFavoritesDataSource
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
 
-class FavoritesRepository(private val localDataSource: LocalFavoritesDataSource) {
+class FavoritesRepository(private val firestoreDataSource: FirestoreFavoritesDataSource) {
 
-    // Flow interne pour notifier les changements
-    private val _state = MutableStateFlow(localDataSource)
-
-    // Flow réactif pour récupérer les IDs favoris
+    // --- Flow réactif des favoris ---
     fun getFavoritesFlow(userId: String): Flow<Set<String>> {
-        return _state.map { it.getFavorites(userId) }
+        return firestoreDataSource.getFavoritesFlow(userId)
     }
 
-    fun addFavorite(userId: String, recipeId: String) {
-        localDataSource.addFavorite(userId, recipeId)
-        _state.value = localDataSource // déclenche le flow
+    // --- Ajouter un favori ---
+    suspend fun addFavorite(userId: String, recipeId: String) {
+        firestoreDataSource.addFavorite(userId, recipeId)
     }
 
-    fun removeFavorite(userId: String, recipeId: String) {
-        localDataSource.removeFavorite(userId, recipeId)
-        _state.value = localDataSource // déclenche le flow
+    // --- Retirer un favori ---
+    suspend fun removeFavorite(userId: String, recipeId: String) {
+        firestoreDataSource.removeFavorite(userId, recipeId)
     }
 
-    fun isFavorite(userId: String, recipeId: String): Boolean {
-        return localDataSource.isFavorite(userId, recipeId)
+    // --- Vérifier si favori ---
+    suspend fun isFavorite(userId: String, recipeId: String): Boolean {
+        val favorites = firestoreDataSource.getFavoritesOnce(userId)
+        return favorites.contains(recipeId)
     }
 }
